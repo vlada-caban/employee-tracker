@@ -31,24 +31,35 @@ const main_menu = [
 ];
 
 function showAllDepartments() {
-  db.query("SELECT * FROM department", function (err, results) {
-    console.log(results);
-    loadMainMenu();
-  });
+  db.query(
+    "SELECT department.id AS ID, department.name AS Department FROM department",
+    function (err, results) {
+      console.table(results);
+      loadMainMenu();
+    }
+  );
 }
 
 function showAllRoles() {
-  db.query("SELECT * FROM role", function (err, results) {
-    console.log(results);
-    loadMainMenu();
-  });
+  db.query(
+    "SELECT role.id AS ID, role.title AS Role, role.salary AS Salary, department.name AS Department FROM role INNER JOIN department ON role.department_id = department.id ORDER BY role.id;",
+    function (err, results) {
+      console.table(results);
+      // console.table();
+      loadMainMenu();
+    }
+  );
 }
 
 function showAllEmployees() {
-  db.query("SELECT * FROM employee", function (err, results) {
-    console.log(results);
-    loadMainMenu();
-  });
+  db.query(
+    "SELECT employee.id AS ID, employee.first_name AS FirstName, employee.last_name as LastName, role.title AS Role, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id;",
+    
+    function (err, results) {
+      console.table(results);
+      loadMainMenu();
+    }
+  );
 }
 
 function loadMainMenu() {
@@ -67,7 +78,6 @@ function loadMainMenu() {
         console.log("Thank you for using Employee Tracker!");
         process.exit(1);
         break;
-
     }
   });
 }
