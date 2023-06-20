@@ -42,7 +42,7 @@ function showAllDepartments() {
 
 function showAllRoles() {
   db.query(
-    "SELECT role.id AS ID, role.title AS Role, role.salary AS Salary, department.name AS Department FROM role INNER JOIN department ON role.department_id = department.id ORDER BY role.id;",
+    "SELECT role.id AS ID, role.title AS Role, role.salary AS Salary, department.name AS Department FROM role JOIN department ON role.department_id = department.id ORDER BY role.id;",
     function (err, results) {
       console.table(results);
       // console.table();
@@ -53,13 +53,34 @@ function showAllRoles() {
 
 function showAllEmployees() {
   db.query(
-    "SELECT employee.id AS ID, employee.first_name AS FirstName, employee.last_name as LastName, role.title AS Role, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id;",
-    
+    "SELECT e.id AS ID, e.first_name AS FirstName, e.last_name as LastName, r.title AS Role, r.salary AS Salary, d.name AS Department, CONCAT(m.first_name, ' ',m.last_name) AS Manager FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id LEFT JOIN employee m ON e.manager_id = m.id;",
+
     function (err, results) {
       console.table(results);
       loadMainMenu();
     }
   );
+}
+
+function addDepartment() {
+  const question = [
+    {
+      type: "input",
+      name: "department_name",
+      message: "Please enter department name you would like to add:",
+    },
+  ];
+  inquirer.prompt(question).then((answer) => {
+    const newDepartment = answer.department_name;
+
+    db.query(
+      `INSERT INTO department (name) VALUES ("${newDepartment}");`,
+      function (err, results) {
+        console.log(`Department ${newDepartment} was successfully added!`);
+        loadMainMenu();
+      }
+    );
+  });
 }
 
 function loadMainMenu() {
@@ -74,6 +95,12 @@ function loadMainMenu() {
       case "View all employees":
         showAllEmployees();
         break;
+      case "Add a department":
+        addDepartment();
+        break;
+      case "Add a role":
+        addRole();
+        break;
       case "Quit":
         console.log("Thank you for using Employee Tracker!");
         process.exit(1);
@@ -82,5 +109,11 @@ function loadMainMenu() {
   });
 }
 
-console.log("Welcome to Employee Tracker!");
+console.log("");
+console.log(" ______________________________");
+console.log("|                              |");
+console.log("| Welcome to Employee Tracker! |");
+console.log("|                              |");
+console.log("|______________________________|");
+console.log("");
 loadMainMenu();
