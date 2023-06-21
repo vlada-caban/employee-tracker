@@ -144,6 +144,7 @@ async function main() {
 
   //function to add a new employee
   async function addEmployee() {
+
     //getting list of all available roles
     const [roles] = await db.execute("SELECT title FROM role");
     const roleList = roles.map((a) => a.title);
@@ -192,7 +193,7 @@ async function main() {
       const firstName = answers.first_name_input;
       const lastName = answers.last_name_input;
       const roleSelected = answers.role_input;
-      
+
       let manId;
       const managerSelected = answers.employee_manager;
 
@@ -204,7 +205,7 @@ async function main() {
         const managerFirstName = managerArr[0];
         const managerLastName = managerArr[1];
 
-        //getting manager employee ID based on selected role
+        //getting manager employee ID based on first name and last name
         const [managerID] = await db.execute(
           `SELECT id FROM employee WHERE first_name = ? AND last_name = ?;`,
           [managerFirstName, managerLastName]
@@ -236,6 +237,71 @@ async function main() {
     });
   }
 
+  async function updateEmployeeRole() {
+    //getting list of all employees
+    const [employees] = await db.execute(
+      "SELECT CONCAT(first_name,' ',last_name) AS full_name FROM employee"
+    );
+    const employeeList = employees.map((a) => a.full_name);
+
+    //getting list of all available roles
+    const [roles] = await db.execute("SELECT title FROM role");
+    const roleList = roles.map((a) => a.title);
+
+    const questions = [
+      {
+        type: "list",
+        name: "full_name_input",
+        message: "Please select employee you would like to update:",
+        choices: employeeList,
+      },
+      {
+        type: "list",
+        name: "new_role_input",
+        message: "Please select new role for this employee:",
+        choices: roleList,
+      },
+    ];
+
+    inquirer.prompt(questions).then(async (answers) => {
+      const fullName = answers.full_name_input.split(" ");
+      const firstName = fullName[0];
+      const lastName = fullName[1];
+
+      const newRoleSelected = answers.new_role_input;
+
+      //getting employee ID based on fist name and last name
+      const [employeeID] = await db.execute(
+        `SELECT id FROM employee WHERE first_name = ? AND last_name = ?;`,
+        [firstName, lastName]
+      );
+      const emplId = employeeID.map((a) => a.id)[0];
+      console.log(emplId);
+
+      //getting role ID based on selected role
+      const [roleID] = await db.execute(
+        `SELECT id FROM role WHERE title = ?;`,
+        [newRoleSelected]
+      );
+      const rId = roleID.map((a) => a.id)[0];
+
+      console.log(rId);
+
+      //updating role id in employee table for that employee
+      await db.execute(
+        `UPDATE employee SET role_id = ? WHERE id = ?;`,
+        [rId, emplId]
+      );
+
+      console.log(
+        `Employee ${firstName} ${lastName} role was updated to ${newRoleSelected}!`
+      );
+
+      loadMainMenu();
+    });
+  }
+
+
   function loadMainMenu() {
     inquirer.prompt(main_menu).then((answer) => {
       switch (answer.main_selection) {
@@ -257,6 +323,9 @@ async function main() {
         case "Add an employee":
           addEmployee();
           break;
+        case "Update an employee role":
+          updateEmployeeRole();
+          break;
         case "Quit":
           console.log("Thank you for using Employee Tracker!");
           process.exit(1);
@@ -272,6 +341,7 @@ async function main() {
   console.log("|                              |");
   console.log("|______________________________|");
   console.log("");
+
   loadMainMenu();
 }
 
