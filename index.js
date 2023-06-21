@@ -32,49 +32,28 @@ async function main() {
   ];
 
   async function showAllDepartments() {
-    // db.query(
-    //   "SELECT department.id AS ID, department.name AS Department FROM department",
-    //   function (err, results) {
-    //     console.table(results);
-    //     loadMainMenu();
-    //   }
-    // );
+    const query =
+      "SELECT department.id AS ID, department.name AS Department FROM department";
 
-    const [rows] = await db.execute(
-      "SELECT department.id AS ID, department.name AS Department FROM department"
-    );
+    const [rows] = await db.execute(query);
     console.table(rows);
     loadMainMenu();
   }
 
   async function showAllRoles() {
-    // db.query(
-    //   "SELECT role.id AS ID, role.title AS Role, role.salary AS Salary, department.name AS Department FROM role JOIN department ON role.department_id = department.id ORDER BY role.id;",
-    //   function (err, results) {
-    //     console.table(results);
-    //     // console.table();
-    //     loadMainMenu();
-    //   }
-    // );
-    const [rows] = await db.execute(
-      "SELECT role.id AS ID, role.title AS Role, role.salary AS Salary, department.name AS Department FROM role JOIN department ON role.department_id = department.id ORDER BY role.id;"
-    );
+    const query =
+      "SELECT role.id AS ID, role.title AS Role, role.salary AS Salary, department.name AS Department FROM role JOIN department ON role.department_id = department.id ORDER BY role.id;";
+
+    const [rows] = await db.execute(query);
     console.table(rows);
     loadMainMenu();
   }
 
   async function showAllEmployees() {
-    // db.query(
-    //   "SELECT e.id AS ID, e.first_name AS FirstName, e.last_name as LastName, r.title AS Role, r.salary AS Salary, d.name AS Department, CONCAT(m.first_name, ' ',m.last_name) AS Manager FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id LEFT JOIN employee m ON e.manager_id = m.id;",
+    const query =
+      "SELECT e.id AS ID, e.first_name AS FirstName, e.last_name as LastName, r.title AS Role, r.salary AS Salary, d.name AS Department, CONCAT(m.first_name, ' ',m.last_name) AS Manager FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id LEFT JOIN employee m ON e.manager_id = m.id;";
 
-    //   function (err, results) {
-    //     console.table(results);
-    //     loadMainMenu();
-    //   }
-    // );
-    const [rows] = await db.execute(
-      "SELECT e.id AS ID, e.first_name AS FirstName, e.last_name as LastName, r.title AS Role, r.salary AS Salary, d.name AS Department, CONCAT(m.first_name, ' ',m.last_name) AS Manager FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id LEFT JOIN employee m ON e.manager_id = m.id;"
-    );
+    const [rows] = await db.execute(query);
     console.table(rows);
     loadMainMenu();
   }
@@ -98,30 +77,51 @@ async function main() {
   }
 
   async function addRole() {
-    // let departmentList;
-
-    // db.query(
-    //   "SELECT name FROM department",
-    //   function (err, results) {
-    //     // departmentList = results;
-    //     const departmentList = results.map((a) => a.name);
-    //     console.log(departmentList);
-    //   }
-    // );
-
     const [rows] = await db.execute("SELECT name FROM department");
-
     const departmentList = rows.map((a) => a.name);
 
-    console.log(departmentList);
+    const questions = [
+      {
+        type: "input",
+        name: "role_title",
+        message: "Please enter role title:",
+      },
+      {
+        type: "input",
+        name: "role_salary",
+        message: "Please enter salary for this role:",
+      },
 
-    //.map and Object/values
-    //departmentList = ["Production", "Design",..]
-    // let departmentArr = departmentList.Object.map(val => Object.values(departmentList));
-    // console.log(departmentList);
-    // console.log(departmentArr);
+      {
+        type: "list",
+        name: "role_department_name",
+        message: "What would you like to do?",
+        choices: departmentList,
+      },
+    ];
 
-    loadMainMenu();
+    inquirer.prompt(questions).then(async (answers) => {
+      const roleTitle = answers.role_title;
+      const roleSalary = answers.role_salary;
+      const departmentSelected = answers.role_department_name;
+      console.log(departmentSelected);
+
+      const [deptID] = await db.execute(
+        `SELECT id FROM department WHERE name = "${departmentSelected}";`
+      );
+
+      const id = deptID.map(a=>a.id)[0];
+      console.log(id);
+      
+      await db.execute(
+        `INSERT INTO role (title, salary, department_id) VALUES("${roleTitle}", ${roleSalary}, ${id});`
+      );
+
+      console.log(`Role ${roleTitle} was successfully Added!`);
+
+      loadMainMenu();
+    });
+  
   }
 
   function loadMainMenu() {
