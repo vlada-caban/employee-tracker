@@ -31,6 +31,15 @@ async function main() {
     },
   ];
 
+  //function to check if user entered anything
+  const checkData = (data) => {
+    if (data !== "") {
+      return true;
+    }
+    return "Please enter requested data.";
+  };
+
+  //function to display all departments from DB
   async function showAllDepartments() {
     const query =
       "SELECT department.id AS ID, department.name AS Department FROM department";
@@ -40,6 +49,7 @@ async function main() {
     loadMainMenu();
   }
 
+  //function to display all roles from DB
   async function showAllRoles() {
     const query =
       "SELECT role.id AS ID, role.title AS Role, role.salary AS Salary, department.name AS Department FROM role JOIN department ON role.department_id = department.id ORDER BY role.id;";
@@ -49,6 +59,7 @@ async function main() {
     loadMainMenu();
   }
 
+  //function to display all employees from DB
   async function showAllEmployees() {
     const query =
       "SELECT e.id AS ID, e.first_name AS FirstName, e.last_name as LastName, r.title AS Role, r.salary AS Salary, d.name AS Department, CONCAT(m.first_name, ' ',m.last_name) AS Manager FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id LEFT JOIN employee m ON e.manager_id = m.id;";
@@ -58,25 +69,30 @@ async function main() {
     loadMainMenu();
   }
 
+  //function to add a new department
   async function addDepartment() {
     const question = [
       {
         type: "input",
         name: "department_name",
         message: "Please enter department name you would like to add:",
+        validate: checkData,
       },
     ];
+
     inquirer.prompt(question).then(async (answer) => {
       const newDepartment = answer.department_name;
-      await db.execute(
-        `INSERT INTO department (name) VALUES ("${newDepartment}");`
-      );
+      await db.execute(`INSERT INTO department (name) VALUES (?);`, [
+        newDepartment,
+      ]);
       console.table(`Department ${newDepartment} was successfully added!`);
       loadMainMenu();
     });
   }
 
+  //function to add a new role
   async function addRole() {
+    //getting list of all departments to select for new role
     const [rows] = await db.execute("SELECT name FROM department");
     const departmentList = rows.map((a) => a.name);
 
@@ -85,13 +101,14 @@ async function main() {
         type: "input",
         name: "role_title",
         message: "Please enter role title:",
+        validate: checkData,
       },
       {
         type: "input",
         name: "role_salary",
         message: "Please enter salary for this role:",
+        validate: checkData,
       },
-
       {
         type: "list",
         name: "role_department_name",
@@ -107,21 +124,116 @@ async function main() {
       console.log(departmentSelected);
 
       const [deptID] = await db.execute(
-        `SELECT id FROM department WHERE name = "${departmentSelected}";`
+        `SELECT id FROM department WHERE name = ?;`,
+        [departmentSelected]
       );
 
-      const id = deptID.map(a=>a.id)[0];
+      const id = deptID.map((a) => a.id)[0];
       console.log(id);
-      
+
       await db.execute(
-        `INSERT INTO role (title, salary, department_id) VALUES("${roleTitle}", ${roleSalary}, ${id});`
+        `INSERT INTO role (title, salary, department_id) VALUES(?, ?, ?);`,
+        [roleTitle, roleSalary, id]
       );
 
       console.log(`Role ${roleTitle} was successfully Added!`);
 
       loadMainMenu();
     });
-  
+  }
+
+  //function to add a new employee
+  async function addEmployee() {
+    //getting list of all available roles
+    const [roles] = await db.execute("SELECT title FROM role");
+    const roleList = roles.map((a) => a.title);
+
+    //getting list of all employees for a manager role
+    const [managers] = await db.execute(
+      "SELECT CONCAT(first_name,' ',last_name) AS full_name FROM employee"
+    );
+    const managerList = managers.map((a) => a.full_name);
+
+    let updatedManagerList = ["None"];
+    for (let i = 0; i < managerList.length; i++) {
+      updatedManagerList.push(managerList[i]);
+    }
+
+    const questions = [
+      {
+        type: "input",
+        name: "first_name_input",
+        message: "Please enter new employee First Name:",
+        validate: checkData,
+      },
+      {
+        type: "input",
+        name: "last_name_input",
+        message: "Please enter new employee Last Name:",
+        validate: checkData,
+      },
+
+      {
+        type: "list",
+        name: "role_input",
+        message: "Please select new employee role:",
+        choices: roleList,
+      },
+
+      {
+        type: "list",
+        name: "employee_manager",
+        message: "Please select new employee manage:",
+        choices: updatedManagerList,
+      },
+    ];
+
+    inquirer.prompt(questions).then(async (answers) => {
+      const firstName = answers.first_name_input;
+      const lastName = answers.last_name_input;
+      const roleSelected = answers.role_input;
+      
+      let manId;
+      const managerSelected = answers.employee_manager;
+
+      //checking if no manager, then assigning null to manager id
+      if (managerSelected === "None") {
+        manId = null;
+      } else {
+        const managerArr = managerSelected.split(" ");
+        const managerFirstName = managerArr[0];
+        const managerLastName = managerArr[1];
+
+        //getting manager employee ID based on selected role
+        const [managerID] = await db.execute(
+          `SELECT id FROM employee WHERE first_name = ? AND last_name = ?;`,
+          [managerFirstName, managerLastName]
+        );
+        manId = managerID.map((a) => a.id)[0];
+        console.log(manId);
+      }
+
+      //getting role ID based on selected role
+      const [roleID] = await db.execute(
+        `SELECT id FROM role WHERE title = ?;`,
+        [roleSelected]
+      );
+      const rId = roleID.map((a) => a.id)[0];
+
+      console.log(rId);
+
+      //adding data into database, employee table
+      await db.execute(
+        `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES(?, ?, ?, ?);`,
+        [firstName, lastName, rId, manId]
+      );
+
+      console.log(
+        `New employee ${firstName} ${lastName} was successfully added!`
+      );
+
+      loadMainMenu();
+    });
   }
 
   function loadMainMenu() {
@@ -141,6 +253,9 @@ async function main() {
           break;
         case "Add a role":
           addRole();
+          break;
+        case "Add an employee":
+          addEmployee();
           break;
         case "Quit":
           console.log("Thank you for using Employee Tracker!");
