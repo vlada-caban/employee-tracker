@@ -16,7 +16,7 @@ VALUES
     ("Production Manager", 75000, 1),
     ("Director of Production", 125000, 1),
     ("CEO", 500000, 8),
-    ("HR Coordinator", 85000, 3), 
+    ("HR Coordinator", 85000.55, 3), 
     ("Paralegal", 80000, 4), 
     ("Merchandiser", 90000, 5), 
     ("VP of Merchandising", 150000, 5),
