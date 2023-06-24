@@ -27,7 +27,7 @@ Example of output when select to view all roles:
 
 ![example all roles output](./assets/images/all-roles.png) 
 
-Link to the walkthrough video: [follow the link]()
+Link to the walkthrough video: [follow the link](https://drive.google.com/file/d/1ngBuHJEbwvjobsgECT1fOLF18YpqiVV1/view?usp=sharing)
 
 
 ## Questions

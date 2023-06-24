@@ -32,13 +32,6 @@ async function main() {
     },
   ];
 
-  //TODO: BONUS
-  // Update employee managers.
-  // View employees by manager.
-  // !View employees by department.
-  // Delete departments, roles, and employees.
-  // View the total utilized budget of a department—in other words, the combined salaries of all employees in that department.
-
   //function to check if user entered anything
   const checkData = (data) => {
     if (data !== "") {
@@ -179,7 +172,6 @@ async function main() {
 
   //function to add a new employee
   async function addEmployee() {
-
     //getting list of all available roles
     const [roles] = await db.execute("SELECT id, title FROM role");
     const roleList = roles.map((role) => ({
@@ -266,13 +258,19 @@ async function main() {
   async function updateEmployeeRole() {
     //getting list of all employees
     const [employees] = await db.execute(
-      "SELECT CONCAT(first_name,' ',last_name) AS full_name FROM employee"
+      "SELECT id, CONCAT(first_name,' ',last_name) AS full_name FROM employee"
     );
-    const employeeList = employees.map((a) => a.full_name);
+    const employeeList = employees.map((name) => ({
+      value: name.id,
+      name: name.full_name,
+    }));
 
     //getting list of all available roles
-    const [roles] = await db.execute("SELECT title FROM role");
-    const roleList = roles.map((a) => a.title);
+    const [roles] = await db.execute("SELECT id, title FROM role");
+    const roleList = roles.map((role) => ({
+      value: role.id,
+      name: role.title,
+    }));
 
     const questions = [
       {
@@ -292,35 +290,16 @@ async function main() {
     inquirer
       .prompt(questions)
       .then(async (answers) => {
-        const fullName = answers.full_name_input.split(" ");
-        const firstName = fullName[0];
-        const lastName = fullName[1];
-
+        const fullName = answers.full_name_input;
         const newRoleSelected = answers.new_role_input;
-
-        //getting employee ID based on fist name and last name
-        const [employeeID] = await db.execute(
-          `SELECT id FROM employee WHERE first_name = ? AND last_name = ?;`,
-          [firstName, lastName]
-        );
-        const emplId = employeeID.map((a) => a.id)[0];
-
-        //getting role ID based on selected role
-        const [roleID] = await db.execute(
-          `SELECT id FROM role WHERE title = ?;`,
-          [newRoleSelected]
-        );
-        const rId = roleID.map((a) => a.id)[0];
 
         //updating role id in employee table for that employee
         await db.execute(`UPDATE employee SET role_id = ? WHERE id = ?;`, [
-          rId,
-          emplId,
+          newRoleSelected,
+          fullName,
         ]);
 
-        console.log(
-          `Employee ${firstName} ${lastName} role was updated to ${newRoleSelected}!`
-        );
+        console.log(`Employee role was updated!`);
 
         loadMainMenu();
       })
@@ -329,8 +308,11 @@ async function main() {
 
   async function viewEmployeesByDepartment() {
     //getting list of all departments to select for new role
-    const [rows] = await db.execute("SELECT name FROM department");
-    const departmentList = rows.map((department) => department.name);
+    const [rows] = await db.execute("SELECT id, name FROM department");
+    const departmentList = rows.map((department) => ({
+      value: department.id,
+      name: department.name,
+    }));
 
     const questions = [
       {
@@ -347,20 +329,14 @@ async function main() {
       .then(async (answers) => {
         const departmentSelected = answers.department_name;
 
-        const [deptID] = await db.execute(
-          `SELECT id FROM department WHERE name = ?;`,
-          [departmentSelected]
-        );
-        const id = deptID.map((a) => a.id)[0];
-
         const [rows] = await db.execute(
           "SELECT CONCAT(e.first_name, ' ', e.last_name) as Employee, d.name AS Department FROM employee e LEFT JOIN role r ON e.role_id = r.id LEFT JOIN department d ON r.department_id = d.id WHERE d.id = ?;",
-          [id]
+          [departmentSelected]
         );
 
         console.table(rows);
 
-        console.log(`Showing employees from ${departmentSelected} department!`);
+        console.log(`Showing employees from selected department!`);
 
         loadMainMenu();
       })
