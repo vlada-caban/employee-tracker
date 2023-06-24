@@ -5,7 +5,7 @@
     "mysql2": "^3.3.5"
   },
   "name": "12-employee-tracker",
-  "description": "",
+  "description": "CLI application to track employees",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
